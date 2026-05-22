@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuroMemory — Teste Cognitivo de Memória Operacional</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --cyan: #00e5ff;
+    --cyan-dim: rgba(0,229,255,0.12);
+    --cyan-border: rgba(0,229,255,0.25);
+    --bg: #040b18;
+    --surface: rgba(255,255,255,0.04);
+    --surface-solid: #0d1626;
+    --text-muted: #8b95a8;
+    --text-faint: #4b5563;
+    --green: #00ff88;
+    --red: #ff4d6d;
+    --radius: 16px;
+    --transition: 0.3s ease;
+    --font-display: 'Space Mono', monospace;
+    --font-body: 'DM Sans', sans-serif;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    background: var(--bg);
+    background-image: 
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0,229,255,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(124,58,237,0.05) 0%, transparent 50%);
+    color: white;
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* ── PARTÍCULAS DE FUNDO ── */
+#particles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.particle {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--cyan);
+    opacity: 0;
+    animation: float linear infinite;
+}
+
+@keyframes float {
+    0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+    10%  { opacity: 0.4; }
+    90%  { opacity: 0.2; }
+    100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+}
+
+/* ── LAYOUT ── */
+.container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    padding: 30px 20px;
+    gap: 12px;
+}
+
+/* ── CABEÇALHO ── */
+.title {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 5vw, 3.2rem);
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--cyan);
+    text-shadow: 0 0 24px rgba(0,229,255,0.5), 0 0 60px rgba(0,229,255,0.2);
+    animation: pulse-glow 3s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { text-shadow: 0 0 20px var(--cyan), 0 0 40px rgba(0,229,255,0.3); }
+    50%       { text-shadow: 0 0 40px var(--cyan), 0 0 80px rgba(0,229,255,0.5); }
+}
+
+.subtitle {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-family: var(--font-body);
+    font-weight: 400;
+    margin-top: 2px;
+}
+
+/* ── BARRA DE PROGRESSO ── */
+.progress-bar-wrapper {
+    width: 760px;
+    max-width: 95%;
+    height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan), #7c3aed);
+    border-radius: 99px;
+    transition: width 0.5s ease;
+    width: 0%;
+}
+
+/* ── CAIXA PRINCIPAL ── */
+.game-box {
+    width: 760px;
+    max-width: 95%;
+    background: var(--surface);
+    border: 1px solid var(--cyan-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 32px 30px;
+    text-align: center;
+    box-shadow: 
+        0 0 50px rgba(0,229,255,0.08),
+        0 25px 50px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+    transition: box-shadow var(--transition);
+}
+
+/* ── CABEÇALHO DO NÍVEL ── */
+.level-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.level {
+    color: var(--cyan);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    font-family: var(--font-display);
+}
+
+.mode-badge {
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    padding: 4px 12px;
+    border-radius: 99px;
+    border: 1px solid var(--cyan-border);
+    color: var(--cyan);
+    background: var(--cyan-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* ── TIMER ── */
+.timer-bar-wrapper {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.timer-bar-fill {
+    height: 100%;
+    background: var(--cyan);
+    border-radius: 99px;
+    transition: width 0.1s linear, background 0.3s;
+    width: 100%;
+}
+
+.timer-bar-fill.warning {
+    background: var(--red);
+}
+
+/* ── SEQUÊNCIA ── */
+.sequence {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 6vw, 3.6rem);
+    letter-spacing: 6px;
+    margin: 20px 0;
+    color: var(--cyan);
+    min-height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    word-break: break-all;
+    transition: color var(--transition), opacity var(--transition);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.sequence.fade-out {
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+.sequence.fade-in {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+/* ── GRADE DE CORES ── */
+.color-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.color-box {
+    height: 90px;
+    border-radius: 14px;
+    border: 3px solid rgba(255,255,255,0.15);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: white;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+    transition: transform 0.2s, border-color 0.2s;
+    cursor: default;
+    user-select: none;
+}
+
+/* ── PERGUNTA ── */
+.question {
+    margin-top: 16px;
+    font-size: 1.2rem;
+    color: var(--cyan);
+    font-weight: 500;
+}
+
+/* ── INPUT ── */
+input[type="text"] {
+    width: 100%;
+    padding: 14px 18px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    background: var(--surface-solid);
+    color: white;
+    font-size: 1.1rem;
+    text-align: center;
+    margin-top: 18px;
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+input[type="text"]:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 20px rgba(0,229,255,0.25);
+}
+
+/* ── BOTÕES ── */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 13px 30px;
+    border: none;
+    border-radius: 10px;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+    letter-spacing: 0.3px;
+}
+
+.btn-primary {
+    background: var(--cyan);
+    color: #000;
+}
+
+.btn-primary:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 28px rgba(0,229,255,0.6);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--cyan);
+    border: 1px solid var(--cyan-border);
+}
+
+.btn-secondary:hover {
+    background: var(--cyan-dim);
+    transform: scale(1.03);
+}
+
+/* ── ESTATÍSTICAS ── */
+.stats {
+    margin-top: 22px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.card {
+    background: rgba(255,255,255,0.03);
+    padding: 14px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: border-color var(--transition);
+}
+
+.card:hover {
+    border-color: var(--cyan-border);
+}
+
+.card h3 {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-faint);
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.card p {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: white;
+}
+
+/* ── RESULTADO ── */
+.result {
+    margin-top: 24px;
+    text-align: left;
+    background: var(--surface-solid);
+    padding: 24px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+    line-height: 1.7;
+    animation: slide-up 0.4s ease;
+}
+
+@keyframes slide-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.result h2 {
+    font-family: var(--font-display);
+    color: var(--cyan);
+    margin-bottom: 16px;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+}
+
+.result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.result-item {
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.result-item .label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.result-item .value {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--cyan);
+}
+
+.result-text {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 14px;
+    margin-top: 4px;
+}
+
+.result-text strong {
+    color: white;
+}
+
+/* ── TELA INICIAL ── */
+.intro-box {
+    text-align: left;
+    width: 100%;
+    animation: fadeSlideUp 0.5s ease both;
+}
+
+@keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.intro-header {
+    text-align: center;
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(0,229,255,0.1);
+}
+
+.intro-header .intro-eyebrow {
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--cyan);
+    opacity: 1;
+    margin-bottom: 8px;
+}
+
+.intro-header p {
+    color: #e8edf4;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    max-width: 380px;
+    margin: 0 auto;
+    font-weight: 400;
+}
+
+.intro-header p strong {
+    color: white;
+    font-weight: 600;
+}
+
+.intro-phases {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.intro-phase {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 13px 16px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: background 0.2s, border-color 0.2s;
+    cursor: default;
+}
+
+.intro-phase:hover {
+    background: rgba(0,229,255,0.04);
+    border-color: rgba(0,229,255,0.18);
+}
+
+.phase-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.phase-icon.num  { background: rgba(0,229,255,0.1);  border: 1px solid rgba(0,229,255,0.2); }
+.phase-icon.col  { background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.25); }
+.phase-icon.inhib { background: rgba(255,77,109,0.1); border: 1px solid rgba(255,77,109,0.2); }
+
+.phase-body {}
+
+.phase-body .phase-label {
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    margin-bottom: 3px;
+}
+
+.phase-label.num-label   { color: var(--cyan); }
+.phase-label.col-label   { color: #c084fc; }
+.phase-label.inhib-label { color: #ff6b8a; }
+
+.phase-icon.num  ~ .phase-body .phase-label { color: var(--cyan); }
+.phase-icon.col  ~ .phase-body .phase-label { color: #c084fc; }
+.phase-icon.inhib ~ .phase-body .phase-label { color: #ff6b8a; }
+
+.phase-body p {
+    font-size: 0.88rem;
+    color: #e2e8f2;
+    line-height: 1.5;
+    font-weight: 400;
+}
+
+.phase-body p em {
+    font-style: normal;
+    color: white;
+}
+
+/* ── TELAS DE TRANSIÇÃO ── */
+.transition-card {
+    width: 100%;
+    text-align: center;
+    padding: 8px 0 4px;
+    animation: fadeSlideUp 0.4s ease both;
+}
+
+.transition-icon-wrap {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    position: relative;
+}
+
+.transition-icon-wrap::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 18px;
+    padding: 1px;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+}
+
+.transition-icon-wrap.colors {
+    background: rgba(168,85,247,0.1);
+}
+.transition-icon-wrap.colors::after {
+    background: linear-gradient(135deg, #a855f7, #00e5ff);
+}
+
+.transition-icon-wrap.inhibition {
+    background: rgba(255,77,109,0.1);
+}
+.transition-icon-wrap.inhibition::after {
+    background: linear-gradient(135deg, #ff4d6d, #fbbf24);
+}
+
+.transition-card h2 {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+.transition-card.colors h2   { color: #c084fc; }
+.transition-card.inhibition h2 { color: #ff6b8a; }
+
+.transition-card .transition-desc {
+    font-size: 0.92rem;
+    color: #e2e8f2;
+    line-height: 1.65;
+    max-width: 340px;
+    margin: 0 auto 20px;
+}
+
+.transition-card .transition-desc strong {
+    color: white;
+    font-weight: 600;
+}
+
+.transition-rule {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 99px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    margin-bottom: 20px;
+    color: white;
+}
+
+.transition-rule.colors    { background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); }
+.transition-rule.inhibition { background: rgba(255,77,109,0.12); border: 1px solid rgba(255,77,109,0.3); }
+
+
+/* ── FASE DE INIBIÇÃO ── */
+.inhibition-prompt {
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 4vw, 1.6rem);
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 4px 0 20px;
+    padding: 14px 24px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+    display: inline-block;
+}
+
+.inhibition-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.inhibition-btn {
+    height: 80px;
+    border-radius: 14px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, filter 0.15s ease;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+}
+
+.inhibition-btn:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    border-color: rgba(255,255,255,0.3);
+}
+
+.inhibition-btn:active {
+    transform: scale(0.97);
+}
+
+.inhibition-btn.flash-correct {
+    filter: brightness(1.5);
+    box-shadow: 0 0 24px rgba(0,255,136,0.6);
+    border-color: var(--green);
+}
+
+.inhibition-btn.flash-wrong {
+    filter: brightness(0.5) saturate(0.3);
+    box-shadow: 0 0 24px rgba(255,77,109,0.6);
+    border-color: var(--red);
+}
+
+/* ── UTILITÁRIOS ── */
+.hidden { display: none !important; }
+
+.text-green { color: var(--green); }
+.text-red   { color: var(--red); }
+
+/* ── FOOTER ── */
+.footer {
+    color: var(--text-faint);
+    font-size: 0.72rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-family: var(--font-display);
+}
+
+/* ── RESPONSIVO ── */
+@media (max-width: 700px) {
+    .game-box { padding: 24px 18px; }
+
+    .sequence { letter-spacing: 4px; }
+
+    .color-grid { grid-template-columns: repeat(3, 1fr); }
+
+    .stats { grid-template-columns: 1fr 1fr 1fr; }
+
+    .result-grid { grid-template-columns: 1fr 1fr; }
+
+    .intro-steps { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 420px) {
+    .color-grid { grid-template-columns: repeat(2, 1fr); }
+    .stats { grid-template-columns: 1fr; }
+    .result-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Partículas de fundo -->
+<div id="particles"></div>
+
+<div class="container">
+
+    <h1 class="title">NEUROMEMORY</h1>
+    <p class="subtitle">Teste Cognitivo de Memória Operacional</p>
+
+    <!-- Barra de progresso geral -->
+    <div class="progress-bar-wrapper">
+        <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+
+    <div class="game-box" id="gameBox">
+
+        <!-- Cabeçalho do nível -->
+        <div class="level-row">
+            <span class="level">Nível <span id="level">1</span> / 25</span>
+            <span class="mode-badge" id="modeBadge">Numérico</span>
+        </div>
+
+        <!-- Timer visual -->
+        <div class="timer-bar-wrapper hidden" id="timerBarWrapper">
+            <div class="timer-bar-fill" id="timerBarFill"></div>
+        </div>
+
+        <!-- Área principal de conteúdo -->
+        <div id="sequence" class="sequence">
+
+            <!-- Tela inicial -->
+            <div id="introContent" class="intro-box" style="width:100%;">
+
+                <div class="intro-header">
+                    <div class="intro-eyebrow">Avaliação Cognitiva · 25 Níveis</div>
+                    <p>O <strong>NeuroMemory</strong> testa memória operacional, atenção e controle inibitório em três fases progressivas.</p>
+                </div>
+
+                <div class="intro-phases">
+                    <div class="intro-phase">
+                        <div class="phase-icon num">🔢</div>
+                        <div class="phase-body">
+                            <div class="phase-label num-label">Níveis 1–10 · Memória Numérica</div>
+                            <p>Uma sequência de números aparece brevemente. <em>Memorize e reproduza</em> na ordem exata.</p>
+                        </div>
+                    </div>
+                    <div class="intro-phase">
+                        <div class="phase-icon col">🎨</div>
+                        <div class="phase-body">
+                            <div class="phase-label col-label">Níveis 11–15 · Memória Visual</div>
+                            <p>Uma grade de cores é exibida por 5s. <em>Lembre a cor</em> de uma posição específica.</p>
+                        </div>
+                    </div>
+                    <div class="intro-phase">
+                        <div class="phase-icon inhib">🚫</div>
+                        <div class="phase-body">
+                            <div class="phase-label inhib-label">Níveis 16–25 · Controle Inibitório</div>
+                            <p>O nome de uma cor aparece. Clique em <em>qualquer cor — exceto</em> a indicada.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div id="colorGrid" class="color-grid hidden"></div>
+        <div id="question" class="question hidden"></div>
+
+        <input
+            type="text"
+            id="answer"
+            placeholder="Digite aqui"
+            class="hidden"
+            autocomplete="off"
+            spellcheck="false"
+        >
+
+        <button id="startBtn" class="btn btn-primary">
+            ▶ Iniciar Teste
+        </button>
+
+        <button id="startColorBtn" class="btn btn-primary hidden">
+            ▶ Iniciar Fase de Cores
+        </button>
+
+        <button id="startInhibitionBtn" class="btn btn-primary hidden">
+            ▶ Iniciar Fase de Inibição
+        </button>
+
+        <button id="submitBtn" class="btn btn-primary hidden">
+            Confirmar ↵
+        </button>
+
+        <button id="restartBtn" class="btn btn-secondary hidden">
+            ↺ Reiniciar
+        </button>
+
+        <!-- Estatísticas em tempo real -->
+        <div class="stats">
+            <div class="card">
+                <h3>Acertos</h3>
+                <p id="hits">—</p>
+            </div>
+            <div class="card">
+                <h3>Erros</h3>
+                <p id="errors">—</p>
+            </div>
+            <div class="card">
+                <h3>Tempo Médio</h3>
+                <p id="avgTime">—</p>
+            </div>
+        </div>
+
+        <!-- Resultado final -->
+        <div id="result" class="result hidden"></div>
+
+    </div>
+
+    <div class="footer">NeuroMemory &copy; Psicologia Cognitiva</div>
+
+</div>
+
+<script>
+/* ─────────────────────────────────────────
+   PARTÍCULAS DE FUNDO
+───────────────────────────────────────── */
+(function spawnParticles() {
+    const container = document.getElementById("particles");
+    const count = 28;
+    for (let i = 0; i < count; i++) {
+        const p = document.createElement("div");
+        p.classList.add("particle");
+        const size = Math.random() * 4 + 1;
+        p.style.cssText = `
+            width: ${size}px;
+            height: ${size}px;
+            left: ${Math.random() * 100}%;
+            animation-duration: ${Math.random() * 18 + 10}s;
+            animation-delay: ${Math.random() * 12}s;
+            opacity: 0;
+        `;
+        container.appendChild(p);
+    }
+})();
+
+/* ─────────────────────────────────────────
+   REFERÊNCIAS DOM
+───────────────────────────────────────── */
+const sequenceEl      = document.getElementById("sequence");
+const answerEl        = document.getElementById("answer");
+const startBtn        = document.getElementById("startBtn");
+const startColorBtn   = document.getElementById("startColorBtn");
+const startInhibitionBtn = document.getElementById("startInhibitionBtn");
+const submitBtn       = document.getElementById("submitBtn");
+const restartBtn      = document.getElementById("restartBtn");
+const levelEl         = document.getElementById("level");
+const hitsEl          = document.getElementById("hits");
+const errorsEl        = document.getElementById("errors");
+const avgTimeEl       = document.getElementById("avgTime");
+const resultEl        = document.getElementById("result");
+const colorGrid       = document.getElementById("colorGrid");
+const questionEl      = document.getElementById("question");
+const progressFill    = document.getElementById("progressFill");
+const modeBadge       = document.getElementById("modeBadge");
+const timerBarWrapper = document.getElementById("timerBarWrapper");
+const timerBarFill    = document.getElementById("timerBarFill");
+const introContent    = document.getElementById("introContent");
+
+/* ─────────────────────────────────────────
+   ESTADO DO JOGO
+───────────────────────────────────────── */
+let level         = 1;
+let sequence      = "";
+let hits          = 0;
+let errors        = 0;
+let totalTime     = 0;
+let rounds        = 0;
+let startTime     = 0;
+let correctAnswer = "";
+let timerInterval = null;
+let colorTransitionDone     = false;
+let inhibitionTransitionDone = false;
+
+const MAX_LEVEL = 25;
+
+const colors = [
+    { name: "vermelho", value: "#ff4d4d" },
+    { name: "azul",     value: "#3b82f6" },
+    { name: "verde",    value: "#22c55e" },
+    { name: "amarelo",  value: "#eab308" },
+    { name: "roxo",     value: "#a855f7" }
+];
+
+// 4 cores fixas usadas na fase de inibição
+const inhibitionColors = [
+    { name: "Vermelho", value: "#ff4d4d" },
+    { name: "Azul",     value: "#3b82f6" },
+    { name: "Verde",    value: "#22c55e" },
+    { name: "Amarelo",  value: "#eab308" },
+];
+
+/* ─────────────────────────────────────────
+   UTILITÁRIOS
+───────────────────────────────────────── */
+function generateSequence(size) {
+    let seq = "";
+    let last = -1;
+    for (let i = 0; i < size; i++) {
+        let n;
+        do { n = Math.floor(Math.random() * 10); } while (n === last);
+        seq += n;
+        last = n;
+    }
+    return seq;
+}
+
+function updateProgress() {
+    const pct = ((level - 1) / MAX_LEVEL) * 100;
+    progressFill.style.width = pct + "%";
+}
+
+function updateStats() {
+    hitsEl.textContent   = hits;
+    errorsEl.textContent = errors;
+    avgTimeEl.textContent = rounds > 0
+        ? (totalTime / rounds / 1000).toFixed(2) + "s"
+        : "—";
+}
+
+function startTimerBar(durationMs) {
+    clearInterval(timerInterval);
+    timerBarWrapper.classList.remove("hidden");
+    timerBarFill.style.width = "100%";
+    timerBarFill.classList.remove("warning");
+
+    const step = 50;
+    let elapsed = 0;
+
+    timerInterval = setInterval(() => {
+        elapsed += step;
+        const pct = Math.max(0, 100 - (elapsed / durationMs) * 100);
+        timerBarFill.style.width = pct + "%";
+        if (pct < 25) timerBarFill.classList.add("warning");
+        if (elapsed >= durationMs) clearInterval(timerInterval);
+    }, step);
+}
+
+function stopTimerBar() {
+    clearInterval(timerInterval);
+    timerBarWrapper.classList.add("hidden");
+}
+
+function showSequenceText(text, color) {
+    sequenceEl.classList.remove("hidden");
+    sequenceEl.style.color = color || "var(--cyan)";
+    sequenceEl.textContent = text;
+}
+
+/* ─────────────────────────────────────────
+   LÓGICA DAS RODADAS
+───────────────────────────────────────── */
+function startRound() {
+    answerEl.value = "";
+    answerEl.classList.add("hidden");
+    submitBtn.classList.add("hidden");
+    questionEl.classList.add("hidden");
+    colorGrid.classList.add("hidden");
+    resultEl.classList.add("hidden");
+    startColorBtn.classList.add("hidden");
+    startInhibitionBtn.classList.add("hidden");
+
+    // Limpa grid de inibição se existir
+    const inhibGrid = document.getElementById("inhibitionGrid");
+    if (inhibGrid) inhibGrid.remove();
+    const inhibPrompt = document.getElementById("inhibitionPrompt");
+    if (inhibPrompt) inhibPrompt.remove();
+
+    stopTimerBar();
+    updateProgress();
+
+    if (level <= 10) {
+        modeBadge.textContent = "Numérico";
+        startNumberMode();
+    } else if (level === 11 && !colorTransitionDone) {
+        showTransitionToColors();
+    } else if (level <= 15) {
+        modeBadge.textContent = "Cores";
+        startColorMode();
+    } else if (level === 16 && !inhibitionTransitionDone) {
+        showTransitionToInhibition();
+    } else {
+        modeBadge.textContent = "Inibição";
+        startInhibitionMode();
+    }
+}
+
+function showTransitionToColors() {
+    modeBadge.textContent = "Transição";
+    sequenceEl.classList.remove("hidden");
+    sequenceEl.style.color = "";
+    sequenceEl.innerHTML = `
+        <div class="transition-card colors">
+            <div class="transition-icon-wrap colors">🎨</div>
+            <h2>Fase Visual</h2>
+            <p class="transition-desc">
+                A fase numérica acabou! Agora você verá uma
+                <strong>grade de cores</strong> por 5 segundos.<br>
+                Memorize as posições — você será perguntado sobre uma delas.
+            </p>
+            <div class="transition-rule colors">
+                👁️ &nbsp;Observe · Memorize · Responda
+            </div>
+        </div>
+    `;
+    startColorBtn.classList.remove("hidden");
+}
+
+function startNumberMode() {
+    sequence = generateSequence(Math.min(level + 2, 9));
+
+    showSequenceText(sequence);
+
+    // Tempo de exibição: 1s base + 0.8s por nível
+    const displayTime = 1000 + (level * 800);
+    startTimerBar(displayTime);
+
+    setTimeout(() => {
+        stopTimerBar();
+        showSequenceText("???");
+        answerEl.placeholder = "Digite a sequência numérica";
+        answerEl.classList.remove("hidden");
+        submitBtn.classList.remove("hidden");
+        answerEl.focus();
+        startTime = Date.now();
+    }, displayTime);
+}
+
+function showTransitionToInhibition() {
+    modeBadge.textContent = "Transição";
+    sequenceEl.classList.remove("hidden");
+    sequenceEl.style.color = "";
+    sequenceEl.innerHTML = `
+        <div class="transition-card inhibition">
+            <div class="transition-icon-wrap inhibition">🚫</div>
+            <h2>Fase de Inibição</h2>
+            <p class="transition-desc">
+                Nova fase, nova regra! O <strong>nome de uma cor</strong> aparecerá
+                em destaque na tela. Você verá 4 botões coloridos —
+                clique em <strong>qualquer um, exceto a cor indicada</strong>.
+            </p>
+            <div class="transition-rule inhibition">
+                ⚡ &nbsp;Rápido · Preciso · Sem errar a proibida
+            </div>
+        </div>
+    `;
+    startInhibitionBtn.classList.remove("hidden");
+}
+
+function startInhibitionMode() {
+    sequenceEl.classList.add("hidden");
+
+    // Escolhe a cor "proibida" aleatoriamente
+    const forbiddenIndex = Math.floor(Math.random() * inhibitionColors.length);
+    const forbidden = inhibitionColors[forbiddenIndex];
+
+    // Cria o prompt com o nome da cor
+    const prompt = document.createElement("div");
+    prompt.id = "inhibitionPrompt";
+    prompt.className = "inhibition-prompt";
+    prompt.textContent = forbidden.name;
+    prompt.style.color = forbidden.value;
+    prompt.style.borderColor = forbidden.value + "44";
+
+    // Cria a grade de 4 botões
+    const grid = document.createElement("div");
+    grid.id = "inhibitionGrid";
+    grid.className = "inhibition-grid";
+
+    // Embaralha as cores
+    const shuffled = [...inhibitionColors].sort(() => Math.random() - 0.5);
+
+    shuffled.forEach(color => {
+        const btn = document.createElement("button");
+        btn.className = "inhibition-btn";
+        btn.style.background = color.value;
+        btn.dataset.colorName = color.name;
+
+        btn.addEventListener("click", () => handleInhibitionClick(btn, color, forbidden));
+        grid.appendChild(btn);
+    });
+
+    // Insere no gameBox antes do submitBtn
+    const gameBox = document.getElementById("gameBox");
+    const submitBtnEl = document.getElementById("submitBtn");
+    gameBox.insertBefore(prompt, submitBtnEl);
+    gameBox.insertBefore(grid, submitBtnEl);
+
+    startTime = Date.now();
+
+    // Tempo limite por nível (vai diminuindo: 5s → 3s)
+    const timeLimit = Math.max(2000, 5500 - (level - 16) * 350);
+    startTimerBar(timeLimit);
+
+    const autoFail = setTimeout(() => {
+        handleInhibitionResult(false, forbidden, null);
+    }, timeLimit);
+
+    // Guarda o timeout para cancelar se o jogador clicar
+    grid.dataset.autoFail = autoFail;
+}
+
+function handleInhibitionClick(btn, clicked, forbidden) {
+    const grid = document.getElementById("inhibitionGrid");
+    if (!grid) return;
+
+    clearTimeout(parseInt(grid.dataset.autoFail));
+    stopTimerBar();
+
+    // Desabilita todos os botões
+    grid.querySelectorAll(".inhibition-btn").forEach(b => b.disabled = true);
+
+    const correct = clicked.name !== forbidden.name;
+    btn.classList.add(correct ? "flash-correct" : "flash-wrong");
+
+    handleInhibitionResult(correct, forbidden, btn);
+}
+
+function handleInhibitionResult(correct, forbidden, btn) {
+    const reactionTime = Date.now() - startTime;
+    totalTime += reactionTime;
+    rounds++;
+
+    if (correct) {
+        hits++;
+        showSequenceText("✓ Correto!", "var(--green)");
+    } else {
+        errors++;
+        showSequenceText(`✗ Errado! Não podia clicar em ${forbidden.name}`, "var(--red)");
+    }
+
+    level++;
+    levelEl.textContent = level;
+    updateStats();
+
+    setTimeout(() => {
+        const grid = document.getElementById("inhibitionGrid");
+        const prompt = document.getElementById("inhibitionPrompt");
+        if (grid) grid.remove();
+        if (prompt) prompt.remove();
+        sequenceEl.classList.remove("hidden");
+
+        if (level > MAX_LEVEL) {
+            finishGame();
+        } else {
+            startRound();
+        }
+    }, 2000);
+}
+
+function startColorMode() {
+    sequenceEl.classList.add("hidden");
+    colorGrid.innerHTML = "";
+
+    const shuffledColors = [...colors].sort(() => Math.random() - 0.5);
+
+    shuffledColors.forEach((color, index) => {
+        const box = document.createElement("div");
+        box.classList.add("color-box");
+        box.style.background = color.value;
+        box.textContent = index + 1;
+        colorGrid.appendChild(box);
+    });
+
+    colorGrid.classList.remove("hidden");
+
+    const randomIndex = Math.floor(Math.random() * 5);
+    correctAnswer = shuffledColors[randomIndex].name.toLowerCase();
+
+    const displayTime = 5000;
+    startTimerBar(displayTime);
+
+    setTimeout(() => {
+        stopTimerBar();
+        colorGrid.classList.add("hidden");
+        questionEl.textContent = `Qual era a cor da posição ${randomIndex + 1}?`;
+        questionEl.classList.remove("hidden");
+        answerEl.placeholder = "Ex: vermelho, azul, verde…";
+        answerEl.classList.remove("hidden");
+        submitBtn.classList.remove("hidden");
+        answerEl.focus();
+        startTime = Date.now();
+    }, displayTime);
+}
+
+/* ─────────────────────────────────────────
+   RESULTADO FINAL
+───────────────────────────────────────── */
+function getPerformanceLabel(score) {
+    if (score >= 0.87) return { label: "Excelente", color: "var(--green)" };
+    if (score >= 0.67) return { label: "Bom",       color: "var(--cyan)"  };
+    if (score >= 0.47) return { label: "Regular",   color: "#eab308"      };
+    return                    { label: "A melhorar", color: "var(--red)"   };
+}
+
+function getPerformanceText(score) {
+    if (score >= 0.87) {
+        return `<strong>Excelente desempenho cognitivo.</strong> O participante demonstrou alta capacidade de retenção e evocação de informações em memória operacional, com atenção sustentada e velocidade de processamento acima da média.`;
+    } else if (score >= 0.67) {
+        return `<strong>Bom desempenho cognitivo.</strong> O participante apresentou boa capacidade de memória operacional, com desempenho consistente na maioria das tarefas de retenção e evocação.`;
+    } else if (score >= 0.47) {
+        return `<strong>Desempenho regular.</strong> O participante apresentou desempenho mediano em tarefas de memória operacional. Exercícios de atenção e concentração podem contribuir para a melhora.`;
+    } else {
+        return `<strong>Desempenho abaixo da média.</strong> O participante apresentou dificuldades nas tarefas de memória operacional. Recomenda-se a repetição do teste e, se necessário, avaliação profissional.`;
+    }
+}
+
+function finishGame() {
+    const avg   = rounds > 0 ? (totalTime / rounds / 1000).toFixed(2) : "0.00";
+    const score = rounds > 0 ? hits / rounds : 0;
+    const perf  = getPerformanceLabel(score);
+
+    showSequenceText("Teste Concluído", "var(--green)");
+    answerEl.classList.add("hidden");
+    submitBtn.classList.add("hidden");
+    questionEl.classList.add("hidden");
+    colorGrid.classList.add("hidden");
+    stopTimerBar();
+
+    progressFill.style.width = "100%";
+
+    resultEl.classList.remove("hidden");
+    resultEl.innerHTML = `
+        <h2>Resultado Final</h2>
+        <div class="result-grid">
+            <div class="result-item">
+                <div class="label">Nível Máximo</div>
+                <div class="value">${level - 1} / ${MAX_LEVEL}</div>
+            </div>
+            <div class="result-item">
+                <div class="label">Memória Operacional</div>
+                <div class="value" style="color:${perf.color}">${(score * 100).toFixed(0)}%</div>
+            </div>
+            <div class="result-item">
+                <div class="label">Acertos</div>
+                <div class="value text-green">${hits}</div>
+            </div>
+            <div class="result-item">
+                <div class="label">Erros</div>
+                <div class="value text-red">${errors}</div>
+            </div>
+            <div class="result-item">
+                <div class="label">Tempo Médio</div>
+                <div class="value">${avg}s</div>
+            </div>
+            <div class="result-item">
+                <div class="label">Classificação</div>
+                <div class="value" style="color:${perf.color}">${perf.label}</div>
+            </div>
+        </div>
+        <div class="result-text">${getPerformanceText(score)}</div>
+    `;
+
+    restartBtn.classList.remove("hidden");
+    updateStats();
+}
+
+/* ─────────────────────────────────────────
+   SUBMISSÃO DE RESPOSTA
+───────────────────────────────────────── */
+submitBtn.addEventListener("click", () => {
+    const userAnswer = answerEl.value.trim().toLowerCase();
+    if (userAnswer === "") return;
+
+    const reactionTime = Date.now() - startTime;
+    totalTime += reactionTime;
+    rounds++;
+
+    const correct = level <= 10
+        ? userAnswer === sequence
+        : userAnswer === correctAnswer;
+
+    if (correct) {
+        hits++;
+        showSequenceText("✓ Correto!", "var(--green)");
+    } else {
+        errors++;
+        const hint = level <= 10
+            ? `Era: ${sequence}`
+            : `Era: ${correctAnswer}`;
+        showSequenceText(`✗ Errado! ${hint}`, "var(--red)");
+    }
+
+    level++;
+    levelEl.textContent = level;
+    updateStats();
+
+    answerEl.classList.add("hidden");
+    submitBtn.classList.add("hidden");
+    questionEl.classList.add("hidden");
+    colorGrid.classList.add("hidden");
+
+    setTimeout(() => {
+        if (level > MAX_LEVEL) {
+            finishGame();
+        } else {
+            startRound();
+        }
+    }, 2000);
+});
+
+answerEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") submitBtn.click();
+});
+
+/* ─────────────────────────────────────────
+   INICIAR / REINICIAR
+───────────────────────────────────────── */
+startBtn.addEventListener("click", () => {
+    startBtn.classList.add("hidden");
+    introContent.remove();
+    hitsEl.textContent   = 0;
+    errorsEl.textContent = 0;
+    avgTimeEl.textContent = "—";
+    startRound();
+});
+
+startColorBtn.addEventListener("click", () => {
+    startColorBtn.classList.add("hidden");
+    sequenceEl.innerHTML = "";
+    colorTransitionDone = true;
+    modeBadge.textContent = "Cores";
+    startColorMode();
+});
+
+startInhibitionBtn.addEventListener("click", () => {
+    startInhibitionBtn.classList.add("hidden");
+    sequenceEl.innerHTML = "";
+    inhibitionTransitionDone = true;
+    modeBadge.textContent = "Inibição";
+    startInhibitionMode();
+});
+
+restartBtn.addEventListener("click", () => {
+    level         = 1;
+    sequence      = "";
+    hits          = 0;
+    errors        = 0;
+    totalTime     = 0;
+    rounds        = 0;
+    startTime     = 0;
+    correctAnswer = "";
+    colorTransitionDone      = false;
+    inhibitionTransitionDone = false;
+
+    levelEl.textContent  = 1;
+    hitsEl.textContent   = 0;
+    errorsEl.textContent = 0;
+    avgTimeEl.textContent = "—";
+    progressFill.style.width = "0%";
+
+    resultEl.classList.add("hidden");
+    restartBtn.classList.add("hidden");
+    startInhibitionBtn.classList.add("hidden");
+
+    const inhibGrid = document.getElementById("inhibitionGrid");
+    if (inhibGrid) inhibGrid.remove();
+    const inhibPrompt = document.getElementById("inhibitionPrompt");
+    if (inhibPrompt) inhibPrompt.remove();
+
+    sequenceEl.classList.remove("hidden");
+    startRound();
+});
+</script>
+
+</body>
+</html>
