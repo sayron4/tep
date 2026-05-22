@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NeuroMemory — Teste Cognitivo de Memória e Atenção</title>
+<title>NeuroMemory — Teste Cognitivo de Memória Operacional</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -727,7 +727,7 @@ input[type="text"]:focus {
 
 <div class="container">
 
-    <h1 class="title">NeuroMemory</h1>
+    <h1 class="title">NEUROMEMORY</h1>
     <p class="subtitle">Teste Cognitivo de Memória Operacional</p>
 
     <!-- Barra de progresso geral -->
@@ -1156,10 +1156,8 @@ function handleInhibitionResult(correct, forbidden, btn) {
 
     if (correct) {
         hits++;
-        showSequenceText("✓ Correto!", "var(--green)");
     } else {
         errors++;
-        showSequenceText(`✗ Errado! Não podia clicar em ${forbidden.name}`, "var(--red)");
     }
 
     level++;
@@ -1178,7 +1176,7 @@ function handleInhibitionResult(correct, forbidden, btn) {
         } else {
             startRound();
         }
-    }, 2000);
+    }, 400);
 }
 
 function startColorMode() {
