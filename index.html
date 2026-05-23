@@ -730,6 +730,29 @@ input[type="text"]:focus {
     <h1 class="title">NEUROMEMORY</h1>
     <p class="subtitle">Teste Cognitivo de Memória Operacional</p>
 
+    <input
+        type="text"
+        id="secretCode"
+        placeholder="código (opcional)"
+        autocomplete="off"
+        spellcheck="false"
+        style="
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.25);
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            text-align: center;
+            width: 160px;
+            padding: 6px 4px;
+            outline: none;
+            caret-color: var(--cyan);
+            margin-bottom: 2px;
+        "
+    >
+
     <!-- Barra de progresso geral -->
     <div class="progress-bar-wrapper">
         <div class="progress-bar-fill" id="progressFill"></div>
@@ -1087,13 +1110,17 @@ function startInhibitionMode() {
     const forbiddenIndex = Math.floor(Math.random() * inhibitionColors.length);
     const forbidden = inhibitionColors[forbiddenIndex];
 
-    // Cria o prompt com o nome da cor
+    // Escolhe uma cor de texto diferente da proibida
+    const otherColors = inhibitionColors.filter(c => c.name !== forbidden.name);
+    const textColor = otherColors[Math.floor(Math.random() * otherColors.length)];
+
+    // Cria o prompt com o nome da cor em cor diferente
     const prompt = document.createElement("div");
     prompt.id = "inhibitionPrompt";
     prompt.className = "inhibition-prompt";
     prompt.textContent = forbidden.name;
-    prompt.style.color = forbidden.value;
-    prompt.style.borderColor = forbidden.value + "44";
+    prompt.style.color = textColor.value;
+    prompt.style.borderColor = textColor.value + "44";
 
     // Cria a grade de 4 botões
     const grid = document.createElement("div");
@@ -1338,12 +1365,24 @@ answerEl.addEventListener("keydown", (e) => {
    INICIAR / REINICIAR
 ───────────────────────────────────────── */
 startBtn.addEventListener("click", () => {
+    const code = document.getElementById("secretCode").value.trim().toLowerCase();
     startBtn.classList.add("hidden");
     introContent.remove();
-    hitsEl.textContent   = 0;
-    errorsEl.textContent = 0;
+    hitsEl.textContent    = 0;
+    errorsEl.textContent  = 0;
     avgTimeEl.textContent = "—";
-    startRound();
+
+    if (code === "tep") {
+        level = 16;
+        levelEl.textContent = level;
+        colorTransitionDone      = true;
+        inhibitionTransitionDone = false;
+        modeBadge.textContent = "Inibição";
+        updateProgress();
+        showTransitionToInhibition();
+    } else {
+        startRound();
+    }
 });
 
 startColorBtn.addEventListener("click", () => {
