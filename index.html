@@ -682,6 +682,71 @@ input[type="text"]:focus {
     border-color: var(--red);
 }
 
+.result-participant {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 6px;
+    opacity: 0.8;
+}
+
+.phase-results-title {
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin: 18px 0 10px;
+}
+
+.phase-results {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.phase-result-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    text-align: left;
+}
+
+.phase-result-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.phase-result-label {
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.phase-result-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    font-size: 0.8rem;
+    color: #e2e8f2;
+}
+
 /* ── UTILITÁRIOS ── */
 .hidden { display: none !important; }
 
@@ -780,6 +845,33 @@ input[type="text"]:focus {
                 <div class="intro-header">
                     <div class="intro-eyebrow">Avaliação Cognitiva · 25 Níveis</div>
                     <p>O <strong>NeuroMemory</strong> testa memória operacional, atenção e controle inibitório em três fases progressivas.</p>
+
+                    <div style="margin-top: 16px;">
+                        <input
+                            type="text"
+                            id="participantName"
+                            placeholder="Nome do participante"
+                            autocomplete="off"
+                            spellcheck="false"
+                            style="
+                                background: rgba(255,255,255,0.04);
+                                border: 1px solid rgba(0,229,255,0.2);
+                                border-radius: 8px;
+                                color: #e8edf4;
+                                font-family: var(--font-body);
+                                font-size: 0.9rem;
+                                text-align: center;
+                                width: 100%;
+                                max-width: 280px;
+                                padding: 10px 14px;
+                                outline: none;
+                                caret-color: var(--cyan);
+                                transition: border-color 0.2s;
+                            "
+                            onfocus="this.style.borderColor='rgba(0,229,255,0.5)'"
+                            onblur="this.style.borderColor='rgba(0,229,255,0.2)'"
+                        >
+                    </div>
                 </div>
 
                 <div class="intro-phases">
@@ -891,6 +983,53 @@ input[type="text"]:focus {
 })();
 
 /* ─────────────────────────────────────────
+   SOM DE FEEDBACK
+───────────────────────────────────────── */
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+
+function getAudioCtx() {
+    if (!audioCtx) audioCtx = new AudioCtx();
+    return audioCtx;
+}
+
+function playSound(type) {
+    try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        if (type === "correct") {
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1100, ctx.currentTime + 0.12);
+            gain.gain.setValueAtTime(0.18, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.25);
+        } else if (type === "wrong") {
+            osc.type = "sawtooth";
+            osc.frequency.setValueAtTime(300, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.2);
+            gain.gain.setValueAtTime(0.15, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.25);
+        } else if (type === "start") {
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(440, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.12, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.3);
+        }
+    } catch(e) {}
+}
+
+/* ─────────────────────────────────────────
    REFERÊNCIAS DOM
 ───────────────────────────────────────── */
 const sequenceEl      = document.getElementById("sequence");
@@ -925,8 +1064,30 @@ let rounds        = 0;
 let startTime     = 0;
 let correctAnswer = "";
 let timerInterval = null;
-let colorTransitionDone     = false;
+let colorTransitionDone      = false;
 let inhibitionTransitionDone = false;
+let participantName = "";
+
+// Estatísticas por fase
+const phaseStats = {
+    numeric:    { hits: 0, errors: 0, totalTime: 0, rounds: 0 },
+    colors:     { hits: 0, errors: 0, totalTime: 0, rounds: 0 },
+    inhibition: { hits: 0, errors: 0, totalTime: 0, rounds: 0 },
+};
+
+function currentPhase() {
+    if (level <= 10) return "numeric";
+    if (level <= 15) return "colors";
+    return "inhibition";
+}
+
+function recordResult(correct, reactionTime) {
+    const phase = currentPhase();
+    phaseStats[phase].rounds++;
+    phaseStats[phase].totalTime += reactionTime;
+    if (correct) phaseStats[phase].hits++;
+    else         phaseStats[phase].errors++;
+}
 
 const MAX_LEVEL = 25;
 
@@ -1181,11 +1342,11 @@ function handleInhibitionResult(correct, forbidden, btn) {
     totalTime += reactionTime;
     rounds++;
 
-    if (correct) {
-        hits++;
-    } else {
-        errors++;
-    }
+    recordResult(correct, reactionTime);
+    playSound(correct ? "correct" : "wrong");
+
+    if (correct) hits++;
+    else         errors++;
 
     level++;
     levelEl.textContent = level;
@@ -1268,25 +1429,49 @@ function finishGame() {
     const score = rounds > 0 ? hits / rounds : 0;
     const perf  = getPerformanceLabel(score);
 
+    playSound("start");
     showSequenceText("Teste Concluído", "var(--green)");
     answerEl.classList.add("hidden");
     submitBtn.classList.add("hidden");
     questionEl.classList.add("hidden");
     colorGrid.classList.add("hidden");
     stopTimerBar();
-
     progressFill.style.width = "100%";
+
+    // Helper para cada fase
+    function phaseRow(label, icon, key, color) {
+        const s = phaseStats[key];
+        if (s.rounds === 0) return "";
+        const acc  = ((s.hits / s.rounds) * 100).toFixed(0);
+        const avg  = (s.totalTime / s.rounds / 1000).toFixed(2);
+        const perf = getPerformanceLabel(s.hits / s.rounds);
+        return `
+        <div class="phase-result-row">
+            <div class="phase-result-icon" style="background:${color}22; border:1px solid ${color}44">${icon}</div>
+            <div class="phase-result-body">
+                <div class="phase-result-label" style="color:${color}">${label}</div>
+                <div class="phase-result-stats">
+                    <span>✓ ${s.hits} acertos</span>
+                    <span>✗ ${s.errors} erros</span>
+                    <span>⏱ ${avg}s médio</span>
+                    <span style="color:${perf.color};font-weight:600">${acc}% — ${perf.label}</span>
+                </div>
+            </div>
+        </div>`;
+    }
 
     resultEl.classList.remove("hidden");
     resultEl.innerHTML = `
+        <div class="result-participant">${participantName}</div>
         <h2>Resultado Final</h2>
+
         <div class="result-grid">
             <div class="result-item">
                 <div class="label">Nível Máximo</div>
                 <div class="value">${level - 1} / ${MAX_LEVEL}</div>
             </div>
             <div class="result-item">
-                <div class="label">Memória Operacional</div>
+                <div class="label">Desempenho Geral</div>
                 <div class="value" style="color:${perf.color}">${(score * 100).toFixed(0)}%</div>
             </div>
             <div class="result-item">
@@ -1306,6 +1491,14 @@ function finishGame() {
                 <div class="value" style="color:${perf.color}">${perf.label}</div>
             </div>
         </div>
+
+        <div class="phase-results-title">Desempenho por Fase</div>
+        <div class="phase-results">
+            ${phaseRow("Memória Numérica",  "🔢", "numeric",    "#00e5ff")}
+            ${phaseRow("Memória Visual",     "🎨", "colors",     "#c084fc")}
+            ${phaseRow("Controle Inibitório","🚫", "inhibition", "#ff6b8a")}
+        </div>
+
         <div class="result-text">${getPerformanceText(score)}</div>
     `;
 
@@ -1328,11 +1521,15 @@ submitBtn.addEventListener("click", () => {
         ? userAnswer === sequence
         : userAnswer === correctAnswer;
 
+    recordResult(correct, reactionTime);
+
     if (correct) {
         hits++;
+        playSound("correct");
         showSequenceText("✓ Correto!", "var(--green)");
     } else {
         errors++;
+        playSound("wrong");
         const hint = level <= 10
             ? `Era: ${sequence}`
             : `Era: ${correctAnswer}`;
@@ -1365,7 +1562,9 @@ answerEl.addEventListener("keydown", (e) => {
    INICIAR / REINICIAR
 ───────────────────────────────────────── */
 startBtn.addEventListener("click", () => {
+    participantName = (document.getElementById("participantName")?.value.trim()) || "Participante";
     const code = document.getElementById("secretCode").value.trim().toLowerCase();
+    playSound("start");
     startBtn.classList.add("hidden");
     introContent.remove();
     hitsEl.textContent    = 0;
@@ -1412,6 +1611,10 @@ restartBtn.addEventListener("click", () => {
     correctAnswer = "";
     colorTransitionDone      = false;
     inhibitionTransitionDone = false;
+    participantName = "";
+    phaseStats.numeric    = { hits: 0, errors: 0, totalTime: 0, rounds: 0 };
+    phaseStats.colors     = { hits: 0, errors: 0, totalTime: 0, rounds: 0 };
+    phaseStats.inhibition = { hits: 0, errors: 0, totalTime: 0, rounds: 0 };
 
     levelEl.textContent  = 1;
     hitsEl.textContent   = 0;
